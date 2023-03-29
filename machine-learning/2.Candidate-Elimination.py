@@ -13,15 +13,15 @@ def candidate_elimination(data):
     general_hypothesis = [['?' for i in range(
         len(specific_hypothesis))] for j in range(len(specific_hypothesis))]
 
-    for i in range(len(data)):
-        if data[i][-1] == "Yes":
+    for line in data:
+        if line[-1] == "Yes":
             for j in range(len(specific_hypothesis)):
-                if specific_hypothesis[j] != data[i][j]:
+                if specific_hypothesis[j] != line[j]:
                     specific_hypothesis[j] = '?'
                     general_hypothesis[j][j] = '?'
         else:
             for j in range(len(specific_hypothesis)):
-                if specific_hypothesis[j] != data[i][j]:
+                if specific_hypothesis[j] != line[j]:
                     general_hypothesis[j][j] = specific_hypothesis[j]
                 else:
                     general_hypothesis[j][j] = '?'
@@ -35,4 +35,5 @@ def candidate_elimination(data):
 
 
 s, g = candidate_elimination(data)
-print(s, g)
+print("Specfic Hypothesis: ", s)
+print("General Hypothesis: ", g)
