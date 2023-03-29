@@ -1,8 +1,15 @@
-
+from sklearn.ensemble import RandomForestClassifier  # 随机森林
+from sklearn.model_selection import cross_val_score
+from sklearn import tree
+from sklearn.ensemble import AdaBoostClassifier
+import re
+import numpy as np
 import pandas as pd
+import random as rd
 from sklearn import preprocessing
+import matplotlib.pyplot as plt
 
-data = pd.read_csv('./data_mining/1.Bank-Loan/bankloan.csv', header=0)
+data = pd.read_csv('./1/bankloan.csv', header=0)
 # 用决策树方法分类
 
 
@@ -22,10 +29,13 @@ class Cleaner:
                 self.data[i] = pd.Categorical(self.data[i]).codes
 
     def train(self):
-        # 最大最小归一化
-        min_max_scaler = preprocessing.MinMaxScaler()
-        data_minmax = min_max_scaler.fit_transform(self.data)
-        print(data_minmax)
+        # 使用决策树分类
+        # predictors是A1-A15
+        predictors = [f"A{i}" for i in range(1, 16)]
+        clf_tree = tree.DecisionTreeClassifier()
+        score = cross_val_score(
+            clf_tree, self.data[predictors], data["A16"], cv=3)
+        print(score.mean())
 
 
 if __name__ == "__main__":
