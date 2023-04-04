@@ -27,6 +27,10 @@ class Cleaner:
         for i in self.data.columns:
             if self.data[i].dtype == 'object':
                 self.data[i] = pd.Categorical(self.data[i]).codes
+        # 对数据进行最大最小归一化
+        min_max_scaler = preprocessing.MinMaxScaler()
+        data_minmax = min_max_scaler.fit_transform(self.data)
+        self.data = pd.DataFrame(data_minmax, columns=self.data.columns)
 
     def train(self):
         # 使用决策树分类
