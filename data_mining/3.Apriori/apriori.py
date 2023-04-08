@@ -13,9 +13,12 @@ class Apriori:
         collections = self.getCollections(dataset, len)
         support_map = self.getSupport(dataset, collections)
         len += 1
+        print(support_map)
         while support_map.values().__len__() > 0:
-            collections = self.getCollections(dataset, len)
+            ssss = map(lambda pair: set(pair), support_map)
+            collections = self.getCollections(ssss, len)
             support_map = self.getSupport(dataset, collections)
+            print(support_map)
             len += 1
             if support_map != {}:
                 self.support_map = support_map
