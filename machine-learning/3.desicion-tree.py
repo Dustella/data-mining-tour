@@ -1,127 +1,148 @@
-import numpy as np
 
-
-class Node:
-
-    """
-    决策树节点的类定义。
-    """
-
-    def __init__(self, feature_idx=None, threshold=None, value=None, left=None, right=None):
-
-        self.feature_idx = feature_idx  # 特征编号
-        self.threshold = threshold  # 特征阈值
-        self.value = value  # 叶节点的类别
-        self.left = left  # 左子树节点
-        self.right = right  # 右子树节点
+import operator
+from math import log
 
 
 class DecisionTree:
+    def __init__(self, dataset, labels):
+        self.dataset = dataset
+        self.labels = labels
+        myTree = self.create_tree(dataset, labels)
+        self.tree = myTree
 
-    """
-    决策树的类定义。
-    """
+    def get_tree(self):
+        return self.tree
 
-    def __init__(self, max_depth=5):
-
-        self.max_depth = max_depth  # 决策树的最大深度
-        self.root = None  # 根节点
-
-    def fit(self, X, y):
+    def get_entropy(self, dataset):
         """
-        使用训练数据拟合决策树。
+        计算信息熵
+        :param dataset: 数据集
+        :return: 信息熵
         """
-        self.root = self._build_tree(X, y)
+        cnt = {}
+        for feature in dataset:
+            currentlabel = feature[-1]
+            if currentlabel not in cnt.keys():
+                cnt[currentlabel] = 0
+            cnt[currentlabel] += 1
+        entropy = 0
+        for key in cnt:
+            # 依照信息熵的公式求 Ent(D)
+            tmp = float(cnt[key]) / len(dataset)
+            entropy -= tmp * log(tmp, 2)
+        return entropy
 
-    def predict(self, X):
+    # 依照最大信息增益的 feature，选择最优特征
+
+    def generate_best_feature(self, dataset):
         """
-        对新数据进行预测。
+        依照最大信息增益的 feature，选择最优特征
+        :param dataset: 数据集
+        :return: 最优特征
         """
-        y_pred = []
-        for x in X:
-            node = self.root
-        while node.left:
-            if x[node.feature_idx] < node.threshold:
-                node = node.left
-        else:
-            node = node.right
-            y_pred.append(node.value)
-        return y_pred
+        # 特征数量
+        base_entropy = self.get_entropy(dataset)
+        best_infogain = 0
+        best_feature = -1
+        for i in range(len(dataset[0]) - 1):
+            # 获取dataset的第i列所有特征
+            features = [example[i] for example in dataset]
+            unique = set(features)
+            new_entropy = 0
+            for val in unique:
+                #  依据特征划分数据集，根据公式计算对应特征的信息增益
+                subDataSet = self.split(dataset, i, val)
+                prob = len(subDataSet) / float(len(dataset))
+                new_entropy += prob * self.get_entropy(subDataSet)
+            infogain = base_entropy - new_entropy
+            if infogain > best_infogain:
+                #  选择最大的信息增益
+                best_infogain = infogain
+                best_feature = i
+        return best_feature
 
-    def _build_tree(self, X, y, depth=0):
+    # 依照特征划分数据集
+
+    def split(self, dataset, axis, value):
         """
-        递归构建决策树。
+        :param dataset: 待划分的数据集
+        :param axis: 划分数据集的特征
+        :param value: 需要返回的特征的值
+        :return: 划分后的数据集
         """
-        n_samples, n_features = X.shape
-        if depth >= self.max_depth or len(np.unique(y)) == 1:
-            # 达到最大深度或叶节点只有一种类别，返回叶节点
-            leaf_value = self._most_common_class(y)
-            return Node(value=leaf_value)
+        res = []
+        for feature in dataset:
+            if feature[axis] == value:
+                # 将符合特征的数据抽取出来
+                se_feature = feature[:axis]
+                se_feature.extend(feature[axis + 1:])
+                res.append(se_feature)
+        return res
 
-    # 寻找最佳分割点
-        best_feature_idx, best_threshold = self._find_best_split(X, y)
+    # 依照出现次数最多的类别作为叶子节点
 
-        # 递归构建左右子树
-        left_idxs = X[:, best_feature_idx] < best_threshold
-        right_idxs = X[:, best_feature_idx] >= best_threshold
-        left = self._build_tree(X[left_idxs], y[left_idxs], depth+1)
-        right = self._build_tree(X[right_idxs], y[right_idxs], depth+1)
-
-        # 返回当前节点
-        return Node(feature_idx=best_feature_idx, threshold=best_threshold, left=left, right=right)
-
-    def _find_best_split(self, X, y):
+    def get_majority(classList):
         """
-        寻找最佳分割点。
+        :param classList: 类别列表
+        :return: 出现次数最多的类别
         """
-        best_gain = 0
-        split_feature_idx, split_threshold = None, None
-        n_samples, n_features = X.shape
+        cnt = {}
+        for vote in classList:
+            if vote not in cnt.keys():
+                cnt[vote] = 0
+            cnt[vote] += 1
+        sorted_cnt = sorted(
+            cnt.items(), key=operator.itemgetter(1), reverse=True)
+        return sorted_cnt[0][0]
 
-        # 遍历所有特征和阈值
-        for feature_idx in range(n_features):
-            for threshold in np.unique(X[:, feature_idx]):
-                left_idxs = X[:, feature_idx] < threshold
-                right_idxs = X[:, feature_idx] >= threshold
-
-                # 计算信息增益
-                gain = self._information_gain(y, y[left_idxs], y[right_idxs])
-                if gain > best_gain:
-                    best_gain = gain
-                    split_feature_idx = feature_idx
-                    split_threshold = threshold
-
-        return split_feature_idx, split_threshold
-
-    def _information_gain(self, parent, left_child, right_child):
+    def create_tree(self, dataset, labels):
         """
-        计算信息增益。
+        :param dataset: 数据集
+        :param labels: 标签集
+        :return: 决策树
         """
-        # 计算父节点的熵
-        parent_entropy = self._entropy(parent)
+        ls = [example[-1] for example in dataset]
+        if ls.count(ls[0]) == len(ls):
+            return ls[0]
+        if len(dataset[0]) == 1:
+            return self.get_majority(ls)
+        # 选择最优特征
+        best_feature = self.generate_best_feature(dataset)
+        best_feature_label = labels[best_feature]
+        # 根据最优特征的标签生成树
+        myTree = {best_feature_label: {}}
+        del(labels[best_feature])
+        featValues = [example[best_feature] for example in dataset]
+        # 获取列表中所有的属性值
+        uniqueVals = set(featValues)
+        for value in uniqueVals:
+            # 依照最优特征的不同取值，划分数据集
+            child_ele = labels[:]
+            myTree[best_feature_label][value] = self.create_tree(
+                self.split(dataset, best_feature, value), child_ele)
+        return myTree
 
-        # 计算左右子节点的权重和熵
-        n_left, n_right = len(left_child), len(right_child)
-        left_entropy = self._entropy(left_child)
-        right_entropy = self._entropy(right_child)
 
-        # 计算信息增益
-        info_gain = parent_entropy - (n_left / (n_left + n_right)) * \
-            left_entropy - (n_right / (n_left + n_right)) * right_entropy
-
-        return info_gain
-
-    def _entropy(self, y):
-        """
-        计算熵。
-        """
-        _, counts = np.unique(y, return_counts=True)
-        probs = counts / len(y)
-        return -np.sum(probs * np.log2(probs))
-
-    def _most_common_class(self, y):
-        """
-        计算样本数最多的类别。
-        """
-        _, counts = np.unique(y, return_counts=True)
-        return _[np.argmax(counts)]
+if __name__ == '__main__':
+    import json
+    # 1. 随机生成数据集
+    dataset = [['Sunny', 'Hot', 'High', 'Weak', 'no'],
+               ['Sunny', 'Hot', 'High', 'Strong', 'no'],
+               ['Overcast', 'Hot', 'High', 'Weak', 'yes'],
+               ['Rain', 'Mild', 'High', 'Weak', 'yes'],
+               ['Rain', 'Cool', 'Normal', 'Weak', 'yes'],
+               ['Rain', 'Cool', 'Normal', 'Strong', 'no'],
+               ['Overcast', 'Cool', 'Normal', 'Strong', 'yes'],
+               ['Sunny', 'Mild', 'High', 'Weak', 'no'],
+               ['Sunny', 'Cool', 'Normal', 'Weak', 'yes'],
+               ['Rain', 'Mild', 'Normal', 'Weak', 'yes'],
+               ['Sunny', 'Mild', 'Normal', 'Strong', 'yes'],
+               ['Overcast', 'Mild', 'High', 'Strong', 'yes'],
+               ['Overcast', 'Hot', 'Normal', 'Weak', 'yes'],
+               ['Rain', 'Mild', 'High', 'Strong', 'no']]
+    labels = ['Outlook', 'Temperature', 'Humidity', 'Wind', 'PlayTennis']
+    # 2. 创建决策树
+    dt = DecisionTree(dataset, labels)
+    # 3. 获取决策树
+    tree = dt.get_tree()
+    print(json.dumps(tree, indent=2, ensure_ascii=False))
