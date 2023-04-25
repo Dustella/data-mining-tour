@@ -2,12 +2,12 @@
 # system lib
 from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score
 from sklearn.svm import SVC, LinearSVC, NuSVC
-from sklearn import cross_validation
+# from sklearn import cross_validation
 
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier  # 随机森林
 from sklearn import tree
-
+import pandas as pd
 # 用于参数搜索
 from sklearn.model_selection import GridSearchCV
 
@@ -20,6 +20,7 @@ from time import time
 import datetime
 import numpy as np
 # python 2.7
+from sklearn.preprocessing import MinMaxScaler
 # import cPickle as pickle
 # python 3.x
 import pickle
@@ -31,11 +32,35 @@ from sklearn.model_selection import cross_validate
 # pickle.load(filename)
 
 
-def load_data(filename):
+def load_data():
     """根据数据格式，读取数据中的X和分类标签y
     """
+    # 读取数据，NaN用众数填充
+    data = pd.read_csv(
+        "./data_mining/4.SVM/preprocess_train.csv", index_col='sample_id', sep=',', header=0, encoding='utf-8', na_values='NaN')
+    # 使用众数填充缺失值
+    data = data.fillna(data.mode().iloc[0])
+    # 对数据预处理
+    # 找出并且打印所有方差为0的列
+    zero_variance_columns = data.columns[data.var() == 0]
+    print(zero_variance_columns)
+    # 进行 max min 归一化, 使用minmaxscaler
+    X = data.drop(['label'], axis=1)
+    Y = data['label']
+    scaler = MinMaxScaler()
+    X = scaler.fit_transform(X)
+    # 将数据转换为DataFrame
+    X = pd.DataFrame(X)
+    Y = pd.DataFrame(Y)
 
-    return x_data, ylabel
+    # 将数据分为训练集和测试集
+    # 从sklearn.model_selection中导入train_test_split用于数据分割。
+    from sklearn.model_selection import train_test_split
+    # 随机采样25%的数据构建测试样本，其余作为训练样本。
+    x_train, x_test, y_train, y_test = train_test_split(
+        X, Y, test_size=0.25, random_state=33)
+
+    return x_train, y_train, x_test, y_test
 
 
 def evaluate_classifier(real_label_list, predict_label_list):
@@ -55,20 +80,18 @@ def evaluate_classifier(real_label_list, predict_label_list):
     return msg
 
 
-def test_svm(train_file, test_file):
+def test_svm():
     """用SVM分类 """
     # use SVM directly
 
-    train_xdata, train_ylabel = load_data(train_file)
-
-    test_xdata, test_ylabel = load_data(test_file)
+    train_xdata,  train_ylabel, test_xdata, test_ylabel = load_data()
 
     print('\nuse SVM directly')
 
     # classifier1 = SVC(kernel='linear')
     # classifier1 = SVC(kernel='linear',probability=True, C=200, cache_size=500)
-    classifier1 = SVC(kernel='linear', probability=True,
-                      C=10, cache_size=500)
+    classifier1 = SVC(kernel='rbf', probability=True,
+                      C=1000, cache_size=500, gamma=2, class_weight='balanced')
 
     classifier1.fit(train_xdata, train_ylabel)
 
@@ -83,8 +106,8 @@ def test_svm(train_file, test_file):
     print("GridSearchCV搜索最优参数......")
     t0 = time()
     param_grid = {
-        "C": [1e3, 5e3, 1e4, 5e4, 1e5],
-        "gamma": [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1],
+        "C": [1, 10, 1e2, 1e3],
+        "gamma": [0.1, 0.2, 0.5, 0.8],
     }
     classifier1 = GridSearchCV(
         SVC(kernel="rbf", class_weight="balanced", probability=True), param_grid)
@@ -110,14 +133,15 @@ def test_svm(train_file, test_file):
     pl.ylim([0.0, 1.0])
     pl.xlabel('False Positive Rate')
     pl.ylabel('True Positive Rate')
-    pl.title('%s SVM ROC' % train_file)
+    pl.title('SVM ROC')
     pl.legend(loc="lower right")
     pl.show()
 
 
 def main():
 
-    test_svm('yourTrain_data', 'yourtTest_data')
+    test_svm()
+    # load_data()
 
 
 if __name__ == '__main__':
