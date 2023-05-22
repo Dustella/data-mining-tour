@@ -29,8 +29,8 @@ def draw_bizear(x1, y1, x2, y2, x3, y3, x4, y4):
         image[int(y), int(x)] = 1
 
 
-draw_bizear(100, 100, 200, 200, 300, 100, 400, 200)
-draw_line(100, 100, 200, 200)
+draw_bizear(300, 100, 200, 200, 300, 100, 400, 200)
+draw_line(300, 100, 200, 200)
 draw_line(300, 100, 400, 200)
 
 draw_bizear(400, 200, 500, 300, 600, 200, 700, 500)
