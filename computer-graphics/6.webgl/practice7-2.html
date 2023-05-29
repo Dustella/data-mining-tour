@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+      varying vec2 vUv;
+
+      void main() {
+       //modelViewMatrix applies the rotation
+      	gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+
+       // 任务二
+      	// vUv = ?
+      }
+    </script>
+
+    <script id="fragment-shader" type="x-shader/x-fragment">
+      uniform sampler2D texture1;
+      varying vec2 vUv;
+
+      void main() {
+       // 任务二
+      	gl_FragColor = ?
+      }
+    </script>
+  </head>
+
+  <body>
+    <script src="three.min.js"></script>
+    <script>
+      var scene = new THREE.Scene();
+      var camera = new THREE.OrthographicCamera(-1, 1, -1, 1, -1, 1);
+
+      var renderer = new THREE.WebGLRenderer();
+      renderer.setSize(512, 512);
+      renderer.setClearColor(0xffffff, 1);
+      document.body.appendChild(renderer.domElement);
+
+      var axis = 0;
+      var flag = true;
+      var theta = new THREE.Vector3(0.0, 0.0, 0.0);
+
+      var cube = new THREE.BoxGeometry(1, 1, 1);
+
+      var texture1 = THREE.ImageUtils.loadTexture("crate.gif");
+      texture1.anisotropy = renderer.getMaxAnisotropy();
+      texture1.wrapS = THREE.RepeatWrapping;
+      texture1.wrapT = THREE.RepeatWrapping;
+
+      var uniforms = {
+        texture1: { type: "t", value: texture1 },
+      };
+
+      var material = new THREE.ShaderMaterial({
+        uniforms: uniforms,
+        vertexShader: document.getElementById("vertex-shader").textContent,
+        fragmentShader: document.getElementById("fragment-shader").textContent,
+      });
+
+      //var material = new THREE.MeshBasicMaterial( { map: texture } );
+
+      var mesh = new THREE.Mesh(cube, material);
+      scene.add(mesh);
+
+      var render = function () {
+        // shaders removed and rotation applied directly to mesh
+        if (flag) {
+          if (axis == 0) {
+            mesh.rotation.x += 0.03;
+          } else if (axis == 1) {
+            mesh.rotation.y += 0.03;
+          } else if (axis == 2) {
+            mesh.rotation.z += 0.03;
+          }
+        }
+
+        requestAnimationFrame(render);
+        renderer.render(scene, camera);
+      };
+
+      render();
+    </script>
+
+    <br />
+
+    <button id="xButton">Rotate X</button>
+    <button id="yButton">Rotate Y</button>
+    <button id="zButton">Rotate Z</button>
+    <button id="ButtonT">Toggle Rotation</button>
+
+    <script>
+      document.getElementById("xButton").onclick = function () {
+        axis = 0;
+      };
+      document.getElementById("yButton").onclick = function () {
+        axis = 1;
+      };
+      document.getElementById("zButton").onclick = function () {
+        axis = 2;
+      };
+      document.getElementById("ButtonT").onclick = function () {
+        flag = !flag;
+      };
+    </script>
+  </body>
+</html>
