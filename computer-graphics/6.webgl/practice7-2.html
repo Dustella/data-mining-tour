@@ -12,8 +12,8 @@
        //modelViewMatrix applies the rotation
       	gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
 
-       // 任务二
-      	// vUv = ?
+        // pass the uv value to the fragment shader
+      	vUv = uv;
       }
     </script>
 
@@ -22,8 +22,8 @@
       varying vec2 vUv;
 
       void main() {
-       // 任务二
-      	gl_FragColor = ?
+        // get the color from the texture
+      	gl_FragColor = texture2D(texture1, vUv);
       }
     </script>
   </head>
