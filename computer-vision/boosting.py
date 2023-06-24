@@ -1,19 +1,34 @@
 import cv2
-
+import time
 # 读取视频文件
 cap = cv2.VideoCapture('video.mp4')
 
+# get fps of video
+fps = cap.get(cv2.CAP_PROP_FPS)
+stay = int(1000 / fps) 
+
+
+# Boosting Tracker: cv2.TrackerBoosting_create()
+# MIL Tracker: cv2.TrackerMIL_create()
+# TLD Tracker: cv2.TrackerTLD_create()
+# MedianFlow Tracker: cv2.TrackerMedianFlow_create()
+# MOSSE Tracker: cv2.TrackerMOSSE_create()
+# CSRT Tracker: cv2.TrackerCSRT_create()
 # 读取第一帧
 ret, frame = cap.read()
 
 # 在第一帧上选择要跟踪的目标区域
 bbox = cv2.selectROI(frame, False)
 
+print(bbox)
+print(type(bbox))
+
 # 创建 KCF 跟踪器
 tracker = cv2.legacy.TrackerCSRT_create()
 tracker.init(frame, bbox)
 
 while True:
+    start_time = time.time()
     # 读取下一帧
     ret, frame = cap.read()
     if not ret:
@@ -35,9 +50,9 @@ while True:
 
     # 显示结果
     cv2.imshow('Tracking', frame)
-
+    end_time = time.time()
     # 按 'q' 键退出
-    if cv2.waitKey(20) & 0xFF == ord('q'):
+    if cv2.waitKey(stay-int(end_time-start_time) ) & 0xFF == ord('q'):
         break
 
 cap.release()
