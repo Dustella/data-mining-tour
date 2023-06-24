@@ -1,5 +1,6 @@
 import cv2
 import time
+from prototype.proto import CompressiveTracker
 # 读取视频文件
 cap = cv2.VideoCapture('video.mp4')
 
@@ -24,7 +25,8 @@ print(bbox)
 print(type(bbox))
 
 # 创建 KCF 跟踪器
-tracker = cv2.legacy.TrackerCSRT_create()
+# tracker = cv2.legacy.TrackerCSRT_create()
+tracker = CompressiveTracker()
 tracker.init(frame, bbox)
 
 while True:
@@ -52,7 +54,7 @@ while True:
     cv2.imshow('Tracking', frame)
     end_time = time.time()
     # 按 'q' 键退出
-    if cv2.waitKey(stay-int(end_time-start_time) ) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap.release()

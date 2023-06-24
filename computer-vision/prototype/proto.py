@@ -96,8 +96,6 @@ class CompressiveTracker:
                     i += 1
             
             np.resize(sample_box,i)
-        print("Done for sample_rect")
-        print(sample_box[:5])
 
     def get_feature_value(self, image_integral, sample_box: List[Rect]):
         sample_box_size = len(sample_box)
@@ -117,14 +115,12 @@ class CompressiveTracker:
                         image_integral[y_min][x_max] -\
                                 image_integral[y_max][x_min])
                 sample_feature_value[i][j] = temp_value.sum()
-        print("Done for get_feature_value")
         return sample_feature_value
 
     def classifier_update(self, sample_feature_value: np.ndarray):
         mu = np.zeros((self.featureNum, 1), dtype=float)
         sigma = np.zeros((self.featureNum, 1), dtype=float)
         learn_rate = self.learnRate
-        print("sample_feature_value",sample_feature_value)
         for i in range(self.featureNum):
             muTemp, sigmaTemp =  cv2.meanStdDev(sample_feature_value[i])
             sigma[i] = math.sqrt(learn_rate*sigma[i]*sigma[i] + (1-learn_rate)*sigmaTemp*sigmaTemp)*mu[i] \
@@ -157,6 +153,13 @@ class CompressiveTracker:
         return radio_max_index, radio_max
     
     def init(self, frame, object_box: Rect):
+        if isinstance(object_box, Rect):
+            object_box = object_box
+        elif isinstance(object_box, tuple):
+            object_box = Rect(object_box[0], object_box[1], object_box[2], object_box[3])
+        else:
+            raise TypeError("object_box must be Rect or tuple")
+        
         self.haar_feature(object_box, self.featureNum)
         self.sample_rect(frame, object_box, self.rOuterPositive,
                             0,1000000, self.sample_positive_box)
@@ -175,8 +178,17 @@ class CompressiveTracker:
             self.classifier_update(self.sample_positive_feature_value)
         self.muNegative, self.sigmaNegative = \
             self.classifier_update(self.sample_negative_feature_value)
+
+        self.last_box = object_box
     
-    def process_frame(self, frame,object_box:Rect):
+    def update(self, frame,):
+        object_box = self.last_box
+        if isinstance(object_box, Rect):
+            object_box = object_box
+        elif isinstance(object_box, tuple):
+            object_box = Rect(object_box[0], object_box[1], object_box[2], object_box[3])
+        else:
+            raise TypeError("object_box must be Rect or tuple")
         self.sample_rect(frame, object_box, self.rSearchWindow,
                             self.rOuterPositive, 1000000, self.detect_box)
         
@@ -207,12 +219,15 @@ class CompressiveTracker:
             self.classifier_update(self.sample_positive_feature_value, )
         self.muNegative, self.sigmaNegative = \
             self.classifier_update(self.sample_negative_feature_value, )
+        
+        self.last_box = self.ROI
+        return True, self.ROI.to_tuple()
 
 if __name__ == '__main__':
-    image = cv2.imread('./computer-vision/prototype/Lenna.jpg')
+    image = cv2.imread('./prototype/Lenna.jpg')
 
     tracker = CompressiveTracker()
 
-    tracker.init(image, Rect(100, 100, 50, 50))
-    tracker.process_frame(image, Rect(100, 100, 50, 50))
-    print(tracker.ROI)
+    tracker.init(image, (100, 100, 50, 50))
+    tracker.update(image, (100, 100, 50, 50))
+    print(tracker.ROI.to_tuple())
