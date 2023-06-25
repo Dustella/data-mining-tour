@@ -1,8 +1,11 @@
+# 目标跟踪器 通用框架 
+# author 余翰文 邵宇涵
 import cv2
 import time
 from prototype.proto import CompressiveTracker
 # 读取视频文件
 cap = cv2.VideoCapture('video.mp4')
+
 
 # get fps of video
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -45,10 +48,10 @@ while True:
         p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
         cv2.rectangle(frame, p1, p2, (255, 0, 0), 2)
         # put text
-        cv2.putText(frame, "Tracking KCF", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+        cv2.putText(frame, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
     else:
         # 跟踪失败
-        cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+        cv2.putText(frame, "Tracking failure", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
 
     # 显示结果
     cv2.imshow('Tracking', frame)

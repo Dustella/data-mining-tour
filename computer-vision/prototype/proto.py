@@ -20,6 +20,7 @@ def rng(upper, lower=0):
 
 class Profiler:
     profiler_depth = 0
+    profile_level = 1
 
     def __init__(self) -> None:
         self.start_time = time.time()
@@ -32,6 +33,8 @@ class Profiler:
     def checkpoint(self, name=""):
         last_time = self.end_time
         self.end_time = time.time()
+        if Profiler.profile_level < Profiler.profiler_depth:
+            return
         print("--"*Profiler.profiler_depth, " Time elapsed: ", self.end_time -
               self.start_time, name, " (", self.end_time - last_time, ")")
         return self.end_time - self.start_time
